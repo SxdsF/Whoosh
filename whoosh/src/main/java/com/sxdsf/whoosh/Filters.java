@@ -19,18 +19,40 @@ public class Filters {
 		isConsumed = new IsConsumedFilter();
 	}
 
+	/**
+	 * 返回一个针对消息体类型的过滤器
+	 * 
+	 * @param cls
+	 *            用于适配比对的类型
+	 * @return
+	 */
 	public static Filter klass(Class<?> cls) {
 		return new ClassFilter(cls);
 	}
 
+	/**
+	 * 返回一个是不是消费过的过滤器
+	 * 
+	 * @return
+	 */
 	public static Filter isConsumed() {
 		return INSTANCE.isConsumed;
 	}
 
+	/**
+	 * 返回一个消息Id的过滤器
+	 * 
+	 * @param id
+	 *            要比对的Id
+	 * @return
+	 */
 	public static Filter messageId(int id) {
 		return new MessageIdFilter(id);
 	}
 
+	/**
+	 * 消息体类型的过滤器
+	 */
 	static class ClassFilter implements Filter {
 
 		private final Class<?> cls;
@@ -51,6 +73,9 @@ public class Filters {
 		}
 	}
 
+	/**
+	 * 是否消费过的过滤器
+	 */
 	static class IsConsumedFilter implements Filter {
 
 		@Override
@@ -63,6 +88,9 @@ public class Filters {
 		}
 	}
 
+	/**
+	 * 消息Id的过滤器
+	 */
 	static class MessageIdFilter implements Filter {
 
 		private final int mId;

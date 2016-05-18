@@ -19,6 +19,12 @@ public class Listener<T> {
 		return new Listener<>(onListen);
 	}
 
+	/**
+	 * 监听者的监听方法
+	 * 
+	 * @param carrier
+	 *            消息的载体
+	 */
 	public void listen(Carrier<T> carrier) {
 		mOnListen.call(carrier);
 	}

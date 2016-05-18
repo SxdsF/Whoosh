@@ -10,5 +10,13 @@ import com.sxdsf.whoosh.info.Message;
  * @desc 消息的过滤类
  */
 public interface Filter {
+
+	/**
+	 * 判断是否要过滤此消息
+	 * 
+	 * @param message
+	 *            要过滤的消息
+	 * @return
+	 */
 	boolean filter(Message message);
 }
