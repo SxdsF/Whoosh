@@ -1,1 +1,1 @@
-include ':sample', ':whoosh', ':whoosh'
+include ':sample', ':whoosh', ':adapter'
