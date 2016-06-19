@@ -15,11 +15,13 @@ import com.sxdsf.whoosh.info.Message;
  */
 public class MyApplication extends Application {
 
+	/** 消息服务的实例 */
 	public static final Whoosh<Listener<Message>> WHOOSH = Whoosh.create();
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		// 初始化消息服务
 		if (!WHOOSH.isInitialized()) {
 			WHOOSH.initialize();
 		}
