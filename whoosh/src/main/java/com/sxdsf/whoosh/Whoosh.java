@@ -81,17 +81,32 @@ public class Whoosh<T> {
 	}
 
 	/**
+	 * 对于某一个目的地的接收，默认是获取后并移除
+	 * 
+	 * @param destination
+	 * @return
+	 */
+	public Message receive(@NonNull Destination destination) {
+		return receive(destination, true);
+	}
+
+	/**
 	 * 对于某一个目的地消息的接收
 	 * 
 	 * @param destination
 	 *            目的地
+	 *
+	 * @param remove
+	 *            取走后是否移除
 	 * @return
 	 */
-	public Message receive(@NonNull Destination destination) {
+	public Message receive(@NonNull Destination destination, boolean remove) {
 		Message content;
 		synchronized (this.themesMapper) {
 			content = this.themesMapper.get(destination.getUniqueId());
-			this.themesMapper.remove(destination.getUniqueId());
+			if (remove) {
+				this.themesMapper.remove(destination.getUniqueId());
+			}
 		}
 		return content;
 	}
