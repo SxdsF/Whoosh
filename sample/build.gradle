@@ -27,4 +27,5 @@ dependencies {
     compile 'io.reactivex:rxandroid:1.2.0'
     compile project(':whoosh')
     compile project(':adapter')
+    compile 'org.greenrobot:eventbus:3.0.0'
 }

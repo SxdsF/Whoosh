@@ -7,7 +7,7 @@ import java.util.UUID;
  */
 public interface Destination {
 
-	String getDestinationName();
+    String getDestinationName();
 
-	UUID getUniqueId();
+    UUID getUniqueId();
 }

@@ -18,29 +18,28 @@ import java.util.concurrent.BlockingQueue;
  */
 public class Producer {
 
-	private final Topic topic;
-	private final BlockingQueue<WhooshMessage> messageQueue;
+    private final Topic topic;
+    private final BlockingQueue<WhooshMessage> messageQueue;
 
-	protected Producer(Topic topic, BlockingQueue<WhooshMessage> messageQueue) {
-		this.topic = topic;
-		this.messageQueue = messageQueue;
-	}
+    protected Producer(Topic topic, BlockingQueue<WhooshMessage> messageQueue) {
+        this.topic = topic;
+        this.messageQueue = messageQueue;
+    }
 
-	private static final String TAG = "Producer";
+    private static final String TAG = "Producer";
 
-	/**
-	 * 发送一个消息
-	 * 
-	 * @param message
-	 *            消息
-	 */
-	public void send(@NonNull Message message) {
-		try {
-			WhooshMessage tm = WhooshMessage.copyFromMessage(message);
-			tm.topic = this.topic;
-			this.messageQueue.put(tm);
-		} catch (InterruptedException e) {
-			Log.e(TAG, e.getMessage());
-		}
-	}
+    /**
+     * 发送一个消息
+     *
+     * @param message 消息
+     */
+    public void send(@NonNull Message message) {
+        try {
+            WhooshMessage tm = WhooshMessage.copyFromMessage(message);
+            tm.topic = this.topic;
+            this.messageQueue.put(tm);
+        } catch (InterruptedException e) {
+            Log.e(TAG, e.getMessage());
+        }
+    }
 }

@@ -9,5 +9,5 @@ package com.sxdsf.whoosh.info;
  */
 interface Information {
 
-	<T> T checkAndGet(Class<T> cls);
+    <T> T checkAndGet(Class<T> cls);
 }

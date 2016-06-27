@@ -9,11 +9,10 @@ package com.sxdsf.whoosh;
  */
 public interface Carrier<T> {
 
-	/**
-	 * 有消息时回调此方法
-	 * 
-	 * @param content
-	 *            消息
-	 */
-	void onReceive(T content);
+    /**
+     * 有消息时回调此方法
+     *
+     * @param content 消息
+     */
+    void onReceive(T content);
 }

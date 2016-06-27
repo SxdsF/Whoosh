@@ -9,15 +9,15 @@ package com.sxdsf.whoosh;
  */
 public class Switchers {
 
-	private Switcher MAIN_THREAD;
+    private Switcher MAIN_THREAD;
 
-	private static final Switchers INSTANCE = new Switchers();
+    private static final Switchers INSTANCE = new Switchers();
 
-	private Switchers() {
-		MAIN_THREAD = new Switcher();
-	}
+    private Switchers() {
+        MAIN_THREAD = new Switcher();
+    }
 
-	public static Switcher mainThread() {
-		return INSTANCE.MAIN_THREAD;
-	}
+    public static Switcher mainThread() {
+        return INSTANCE.MAIN_THREAD;
+    }
 }
