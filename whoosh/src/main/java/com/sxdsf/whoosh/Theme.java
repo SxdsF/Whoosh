@@ -1,19 +1,32 @@
 package com.sxdsf.whoosh;
 
+import java.util.List;
+
 /**
- * Theme
+ * com.sxdsf.whoosh.Theme
  *
- * @author sunbowen
- * @date 2016/5/17-14:53
+ * @author 孙博闻
+ * @date 2016/5/17 14:53
  * @desc 继承Listener实现Carrier
  */
-public class Theme<T> extends Listener<T> implements Carrier<T> {
+class Theme<T> extends Listener<T> implements Carrier<T> {
 
     private ThemeOnListen<T> mTol;
+    private final List<Filter> mFilters;
 
-    protected Theme(OnListen<T> onListen, ThemeOnListen<T> tol) {
+    /**
+     * 获取当前监听者下的filters
+     *
+     * @return
+     */
+    List<Filter> getFilters() {
+        return mFilters;
+    }
+
+    Theme(OnListen<T> onListen, ThemeOnListen<T> tol, List<Filter> filters) {
         super(onListen);
         mTol = tol;
+        mFilters = filters;
     }
 
     @Override
@@ -21,9 +34,16 @@ public class Theme<T> extends Listener<T> implements Carrier<T> {
         mTol.mRawCarrier.onReceive(content);
     }
 
-    public static <T> Theme<T> create() {
+    /**
+     * 创建一个Theme
+     *
+     * @param filters 过滤器的集合
+     * @param <T>
+     * @return
+     */
+    static <T> Theme<T> create(List<Filter> filters) {
         ThemeOnListen<T> tol = new ThemeOnListen<>();
-        return new Theme<>(tol, tol);
+        return new Theme<>(tol, tol, filters);
     }
 
     private static class ThemeOnListen<T> implements OnListen<T> {

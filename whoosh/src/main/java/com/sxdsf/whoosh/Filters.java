@@ -3,14 +3,17 @@ package com.sxdsf.whoosh;
 import com.sxdsf.whoosh.info.Message;
 
 /**
- * Filters
+ * com.sxdsf.whoosh.Filters
  *
- * @author sunbowen
- * @date 2016/5/18-15:26
- * @desc Filter的集合
+ * @author 孙博闻
+ * @date 2016/7/1 10:18
+ * @desc 消息的过滤器的集合，里面是系统提供的几个过滤器
  */
 public class Filters {
 
+    /**
+     * 是否消费过的过滤器
+     */
     private final Filter isConsumed;
 
     private static final Filters INSTANCE = new Filters();
@@ -51,19 +54,19 @@ public class Filters {
     /**
      * 消息体类型的过滤器
      */
-    static class ClassFilter implements Filter {
+    private static class ClassFilter implements Filter {
 
-        private final Class<?> cls;
+        private final Class<?> mCls;
 
         public ClassFilter(Class<?> cls) {
-            this.cls = cls;
+            mCls = cls;
         }
 
         @Override
         public boolean filter(Message message) {
             boolean result = false;
             if (message != null) {
-                if (message.checkAndGet(this.cls) != null) {
+                if (message.checkAndGet(mCls) != null) {
                     result = true;
                 }
             }
@@ -74,13 +77,13 @@ public class Filters {
     /**
      * 是否消费过的过滤器
      */
-    static class IsConsumedFilter implements Filter {
+    private static class IsConsumedFilter implements Filter {
 
         @Override
         public boolean filter(Message message) {
             boolean result = false;
             if (message != null) {
-                result = !message.isConsumed;
+                result = !message.mIsConsumed;
             }
             return result;
         }
@@ -89,19 +92,19 @@ public class Filters {
     /**
      * 消息Id的过滤器
      */
-    static class MessageIdFilter implements Filter {
+    private static class MessageIdFilter implements Filter {
 
         private final int mId;
 
         public MessageIdFilter(int id) {
-            this.mId = id;
+            mId = id;
         }
 
         @Override
         public boolean filter(Message message) {
             boolean result = false;
             if (message != null) {
-                if (this.mId == message.messageId) {
+                if (mId == message.mMessageId) {
                     result = true;
                 }
             }

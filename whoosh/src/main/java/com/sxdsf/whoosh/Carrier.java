@@ -1,7 +1,7 @@
 package com.sxdsf.whoosh;
 
 /**
- * Carrier
+ * com.sxdsf.whoosh.Carrier
  *
  * @author sunbowen
  * @date 2016/5/16-17:07

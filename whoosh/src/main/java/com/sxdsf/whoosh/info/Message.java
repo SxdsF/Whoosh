@@ -3,59 +3,82 @@ package com.sxdsf.whoosh.info;
 import android.support.annotation.NonNull;
 
 /**
- * Created by sunbowen on 2015/12/17.
+ * com.sxdsf.whoosh.info.Message
+ *
+ * @author 孙博闻
+ * @date 2015/12/17 23:41
+ * @desc 消息类，继承自信息接口
  */
 public abstract class Message implements Information, Comparable<Message> {
 
     /**
+     * 最小优先级
+     */
+    public final static int MIN_PRIORITY = 1;
+    /**
+     * 正常优先级
+     */
+    public final static int NORM_PRIORITY = 5;
+    /**
+     * 最高优先级
+     */
+    public final static int MAX_PRIORITY = 10;
+
+    /**
      * 消息id
      */
-    public int messageId;
+    public int mMessageId;
     /**
      * 时间戳
      */
-    public final long timestamp;
+    public final long mTimestamp;
     /**
      * 优先级
      */
-    public int priority = NORM_PRIORITY;
+    public int mPriority = NORM_PRIORITY;
     /**
      * 是否是空消息
      */
-    public boolean isEmptyMessage;
+    public boolean mIsEmptyMessage;
     /**
      * 是否被消费
      */
-    public boolean isConsumed;
-
-    public final static int MIN_PRIORITY = 1;
-    public final static int NORM_PRIORITY = 5;
-    public final static int MAX_PRIORITY = 10;
+    public boolean mIsConsumed;
 
     protected Message() {
-        this.timestamp = System.currentTimeMillis();
+        this.mTimestamp = System.currentTimeMillis();
     }
 
     @Override
-    public int compareTo(Message another) {
+    public int compareTo(@NonNull Message another) {
         int result = 0;
-        if (another != null) {
-            if (this.priority < another.priority) {
-                result = -1;
-            } else if (this.priority > another.priority) {
-                result = 1;
-            }
+        if (mPriority < another.mPriority) {
+            result = -1;
+        } else if (mPriority > another.mPriority) {
+            result = 1;
         }
         return result;
     }
 
+    /**
+     * 创建一个消息
+     *
+     * @param content 消息的内容
+     * @param <T>
+     * @return
+     */
     public static <T> Message create(@NonNull T content) {
         return new WhooshMessage<>(content);
     }
 
+    /**
+     * 创建一个空消息，内容为null
+     *
+     * @return
+     */
     public static Message createEmptyMessage() {
         Message message = new WhooshMessage<>(null);
-        message.isEmptyMessage = true;
+        message.mIsEmptyMessage = true;
         return message;
     }
 }

@@ -3,38 +3,36 @@ package com.sxdsf.whoosh.info;
 import java.util.UUID;
 
 /**
- * Created by sunbowen on 2015/12/17.
+ * com.sxdsf.whoosh.info.WhooshDestination
+ *
+ * @author 孙博闻
+ * @date 2015/12/17 0:32
+ * @desc Whoosh服务实现的目的地类
  */
 public class WhooshDestination implements Destination {
 
-    private String physicalName;
-    private final UUID uuid;
+    /**
+     * 名称
+     */
+    public final String mName;
+    /**
+     * 唯一Id
+     */
+    public final UUID mUuid;
 
-    public WhooshDestination(String physicalName) {
-        this.physicalName = physicalName;
-        this.uuid = UUID.randomUUID();
-    }
-
-    public String getPhysicalName() {
-        return physicalName;
-    }
-
-    public void setPhysicalName(String physicalName) {
-        this.physicalName = physicalName;
-    }
-
-    public UUID getUuid() {
-        return uuid;
+    public WhooshDestination(String name) {
+        mName = name;
+        mUuid = UUID.randomUUID();
     }
 
     @Override
     public String getDestinationName() {
-        return this.getPhysicalName();
+        return mName;
     }
 
     @Override
     public UUID getUniqueId() {
-        return this.getUuid();
+        return mUuid;
     }
 
     @Override
@@ -51,7 +49,7 @@ public class WhooshDestination implements Destination {
             return false;
         }
 
-        return this.uuid.equals(((WhooshDestination) object).uuid);
+        return mUuid.equals(((WhooshDestination) object).mUuid);
     }
 
 }

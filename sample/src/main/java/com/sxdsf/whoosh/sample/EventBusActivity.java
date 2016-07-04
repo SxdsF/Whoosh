@@ -7,7 +7,11 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class EventBusActivity extends AppCompatActivity {
+
+    private static AtomicInteger count = new AtomicInteger(0);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +26,7 @@ public class EventBusActivity extends AppCompatActivity {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    System.out.println("第" + finalI + "个线程发送" + System.currentTimeMillis() + Thread.currentThread());
                     EventBus.getDefault().post("第" + finalI + "个线程发送");
                 }
             }).start();
@@ -39,8 +44,7 @@ public class EventBusActivity extends AppCompatActivity {
 
         @Subscribe(threadMode = ThreadMode.MAIN)
         public void onEvent(String msg) {
-            System.out.println("第" + i + "个接收到消息为---" + msg + "---，时间为"
-                    + System.currentTimeMillis());
+            System.out.println("一共调用了" + count.incrementAndGet() + "第" + i + "回调" + msg + System.currentTimeMillis() + Thread.currentThread());
         }
     }
 }

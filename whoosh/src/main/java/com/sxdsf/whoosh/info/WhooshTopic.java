@@ -1,22 +1,26 @@
 package com.sxdsf.whoosh.info;
 
 /**
- * Created by sunbowen on 2015/12/17.
+ * com.sxdsf.whoosh.info.WhooshTopic
+ *
+ * @author 孙博闻
+ * @date 2015/12/17 0:38
+ * @desc Whoosh服务实现的话题类
  */
-public class WhooshTopic extends WhooshDestination implements Topic, Comparable<WhooshTopic> {
+public class WhooshTopic extends WhooshDestination implements Topic {
 
-    public WhooshTopic(String physicalName) {
-        super(physicalName);
+    public WhooshTopic(String name) {
+        super(name);
     }
 
     @Override
     public String getTopicName() {
-        return this.getPhysicalName();
+        return mName;
     }
 
     @Override
     public String toString() {
-        return this.getTopicName();
+        return getTopicName();
     }
 
     @Override
@@ -33,15 +37,6 @@ public class WhooshTopic extends WhooshDestination implements Topic, Comparable<
             return false;
         }
 
-        return this.getUuid().equals(((WhooshTopic) object).getUuid());
-    }
-
-    @Override
-    public int compareTo(WhooshTopic another) {
-        if (another == this) {
-            return 0;
-        }
-
-        return this.getUuid().compareTo(another.getUuid());
+        return mUuid.equals(((WhooshTopic) object).mUuid);
     }
 }

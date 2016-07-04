@@ -3,11 +3,11 @@ package com.sxdsf.whoosh;
 import com.sxdsf.whoosh.info.Message;
 
 /**
- * Filter
+ * com.sxdsf.whoosh.Filter
  *
- * @author sunbowen
- * @date 2016/5/18-15:11
- * @desc 消息的过滤类
+ * @author 孙博闻
+ * @date 2016/7/1 10:18
+ * @desc 消息的过滤器
  */
 public interface Filter {
 

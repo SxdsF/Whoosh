@@ -6,50 +6,70 @@ import android.util.Log;
 import com.sxdsf.whoosh.info.Destination;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
-import com.sxdsf.whoosh.info.WhooshMessage;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Whoosh
+ * com.sxdsf.whoosh.Whoosh
  *
- * @author sunbowen
- * @date 2016/5/18-15:09
- * @desc 消息服务的Builder类
+ * @author 孙博闻
+ * @date 2016/5/18 15:09
+ * @desc 消息服务的主类
  */
 public class Whoosh<T> {
-    private Adapter<T> mAdapter;
+
+    /**
+     * 结果适配器
+     */
+    private final Adapter<T> mAdapter;
+    /**
+     * 话题和消息监听者的存储单元
+     */
+    public final StorageUnit<T> mStorageUnit;
+    /**
+     * 用于类似activity中传值所保存东西的地方
+     */
+    private final Map<UUID, Message> mThingsMapper = new ConcurrentHashMap<>();
+    /**
+     * 服务是否启动的标识
+     */
+    private final AtomicBoolean mIsInit = new AtomicBoolean(false);
+    /**
+     * 锁，用于保证一个线程拿到锁后，一次性把所有监听者遍历完
+     */
+    private final Lock mLock = new ReentrantLock(true);
 
     private Whoosh(Adapter<T> adapter) {
-        this.mAdapter = adapter;
+        mAdapter = adapter;
+        mStorageUnit = new StorageUnit<>(mAdapter);
     }
 
+    /**
+     * 创建一个服务，使用传入的适配器
+     *
+     * @param adapter 适配器
+     * @param <T>
+     * @return
+     */
     public static <T> Whoosh<T> create(Adapter<T> adapter) {
         return new Whoosh<>(adapter);
     }
 
+    /**
+     * 创建一个服务，使用默认的适配器
+     *
+     * @return
+     */
     public static Whoosh<Listener<Message>> create() {
         return create(new Adapter.DefaultAdapter());
     }
-
-    private final Map<UUID, Message> mThemesMapper = new ConcurrentHashMap<>();
-    private final StorageUnit mStorageUnit = new StorageUnit();
-    private final BlockingQueue<WhooshMessage> mMessageQueue = new PriorityBlockingQueue<>();
-    private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
-    private final AtomicBoolean mIsInit = new AtomicBoolean(false);
-    private final ReadWriteLock mRwl = new ReentrantReadWriteLock(true);
 
     private static final String TAG = "Whoosh";
 
@@ -57,8 +77,8 @@ public class Whoosh<T> {
      * 初始化方法
      */
     public void initialize() {
-        if (this.mIsInit.compareAndSet(false, true)) {
-            this.mExecutorService.execute(new Task());
+        if (mIsInit.compareAndSet(false, true)) {
+            Log.v(TAG, "Whoosh is initialized");
         }
     }
 
@@ -68,7 +88,7 @@ public class Whoosh<T> {
      * @return
      */
     public boolean isInitialized() {
-        return this.mIsInit.get();
+        return mIsInit.get();
     }
 
     /**
@@ -78,13 +98,13 @@ public class Whoosh<T> {
      * @param message     消息
      */
     public void post(@NonNull Destination destination, @NonNull Message message) {
-        this.mThemesMapper.put(destination.getUniqueId(), message);
+        this.mThingsMapper.put(destination.getUniqueId(), message);
     }
 
     /**
      * 对于某一个目的地的接收，默认是获取后并移除
      *
-     * @param destination
+     * @param destination 目的地
      * @return
      */
     public Message receive(@NonNull Destination destination) {
@@ -100,10 +120,10 @@ public class Whoosh<T> {
      */
     public Message receive(@NonNull Destination destination, boolean remove) {
         Message content;
-        synchronized (this.mThemesMapper) {
-            content = this.mThemesMapper.get(destination.getUniqueId());
+        synchronized (mThingsMapper) {
+            content = mThingsMapper.get(destination.getUniqueId());
             if (remove) {
-                this.mThemesMapper.remove(destination.getUniqueId());
+                mThingsMapper.remove(destination.getUniqueId());
             }
         }
         return content;
@@ -117,25 +137,13 @@ public class Whoosh<T> {
      * @return
      */
     public T register(@NonNull Topic topic, Filter... filters) {
-        Theme<Message> theme = Theme.create();
-        mRwl.writeLock().lock();
-        try {
-            List<Theme<Message>> themes = this.mStorageUnit.themesMapper.get(topic.getUniqueId());
-            if (themes == null) {
-                themes = new ArrayList<>();
-                this.mStorageUnit.themesMapper.put(topic.getUniqueId(), themes);
-            }
-            List<Filter> filterList = new ArrayList<>();
-            filterList.add(Filters.isConsumed());
-            if (filters != null && filters.length > 0) {
-                filterList.addAll(Arrays.asList(filters));
-            }
-            this.mStorageUnit.filtersMapper.put(theme, filterList);
-            themes.add(theme);
-        } finally {
-            mRwl.writeLock().unlock();
+        List<Filter> filterList = null;
+        if (filters != null && filters.length > 0) {
+            filterList = Arrays.asList(filters);
         }
-        return this.mAdapter.adapt(theme);
+        Theme<Message> theme = Theme.create(filterList);
+        mStorageUnit.add(topic, theme);
+        return mAdapter.adapt(theme);
     }
 
     /**
@@ -145,85 +153,45 @@ public class Whoosh<T> {
      * @param listener 监听者
      */
     public void unRegister(@NonNull Topic topic, T listener) {
-        mRwl.writeLock().lock();
-        try {
-            List<Theme<Message>> themes = this.mStorageUnit.themesMapper.get(topic.getUniqueId());
-            if (themes != null) {
-                themes.remove(Theme.class.cast(this.mAdapter.reverseAdapt(listener)));
-                if (themes.isEmpty()) {
-                    this.mStorageUnit.themesMapper.remove(topic.getUniqueId());
-                }
-            }
-            this.mStorageUnit.filtersMapper.remove(Theme.class.cast(this.mAdapter.reverseAdapt(listener)));
-        } finally {
-            mRwl.writeLock().unlock();
-        }
+        mStorageUnit.remove(topic, listener);
     }
 
     /**
-     * 针对一个话题生成一个消息产生者
+     * 基于某一个话题，发送一个消息
      *
-     * @param topic 话题
-     * @return
+     * @param topic   话题
+     * @param message 消息
      */
-    public Producer createProducer(@NonNull Topic topic) {
-        return new Producer(topic, this.mMessageQueue);
-    }
-
-    private class Task implements Runnable {
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    final WhooshMessage message = mMessageQueue.take();
-                    if (message == null || message.topic == null) {
-                        continue;
-                    }
-                    Topic topic = message.topic;
-                    mRwl.readLock().lock();
-                    try {
-                        List<Theme<Message>> themes = mStorageUnit.themesMapper.get(topic.getUniqueId());
-                        if (themes == null || themes.isEmpty()) {
-                            continue;
-                        }
-
-                        for (final Theme<Message> theme : themes) {
-                            if (theme == null) {
+    public void send(@NonNull Topic topic, @NonNull final Message message) {
+        mLock.lock();
+        try {
+            List<Theme<Message>> themes = mStorageUnit.get(topic);
+            if (themes == null) {
+                return;
+            }
+            for (final Theme<Message> theme : themes) {
+                if (theme == null) {
+                    continue;
+                }
+                boolean isThroughFilters = true;
+                //如果是空消息，一个过滤器都不会走
+                if (!message.mIsEmptyMessage) {
+                    List<Filter> filters = theme.getFilters();
+                    if (filters != null) {
+                        for (Filter filter : filters) {
+                            if (filter == null) {
                                 continue;
                             }
-
-                            boolean flag = true;
-                            List<Filter> filters = mStorageUnit.filtersMapper.get(theme);
-                            if (filters != null) {
-                                for (Filter filter : filters) {
-                                    if (filter != null) {
-                                        flag = flag && filter.filter(message);
-                                    }
-                                }
-                            }
-
-                            if (flag) {
-                                Listener.from(message).listenOn(Switchers.mainThread())
-                                        .listen(new Carrier<WhooshMessage>() {
-                                            @Override
-                                            public void onReceive(WhooshMessage content) {
-                                                theme.onReceive(message);
-                                            }
-                                        });
-                            }
+                            isThroughFilters = isThroughFilters && filter.filter(message);
                         }
-                    } finally {
-                        mRwl.readLock().unlock();
                     }
-                } catch (InterruptedException e) {
-                    Log.e(TAG, e.getMessage());
+                }
+                if (isThroughFilters) {
+                    theme.onReceive(message);
                 }
             }
+        } finally {
+            mLock.unlock();
         }
-    }
-
-    public static class StorageUnit {
-        public final Map<UUID, List<Theme<Message>>> themesMapper = new ConcurrentHashMap<>();
-        public final Map<Theme<Message>, List<Filter>> filtersMapper = new ConcurrentHashMap<>();
     }
 }

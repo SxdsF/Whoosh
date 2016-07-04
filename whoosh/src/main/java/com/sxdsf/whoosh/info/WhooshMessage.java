@@ -3,36 +3,47 @@ package com.sxdsf.whoosh.info;
 import android.support.annotation.NonNull;
 
 /**
- * Created by sunbowen on 2015/12/17.
+ * com.sxdsf.whoosh.info.WhooshMessage
+ *
+ * @author 孙博闻
+ * @date 2015/12/17 0:41
+ * @desc Whoosh服务实现的消息类
  */
 public class WhooshMessage<R> extends Message {
 
     /**
      * 内容
      */
-    private R content;
-    public Topic topic;
+    private final R mContent;
+    /**
+     * 此消息对应的话题
+     */
+    public Topic mTopic;
 
-    public WhooshMessage(R content) {
-        this(content, null);
-    }
-
-    public WhooshMessage(R content, Topic topic) {
+    WhooshMessage(R content) {
         super();
-        this.content = content;
-        this.topic = topic;
+        mContent = content;
     }
 
     @Override
     public <T> T checkAndGet(Class<T> cls) {
         T t = null;
-        if (cls != null && this.content != null && cls == this.content.getClass()) {
-            t = cls.cast(this.content);
+        if (cls != null && mContent != null && cls == mContent.getClass()) {
+            t = cls.cast(mContent);
         }
         return t;
     }
 
-    public static WhooshMessage copyFromMessage(@NonNull Message message) {
-        return WhooshMessage.class.cast(message);
+    /**
+     * 从Message拷贝出一个WhooshMessage
+     *
+     * @param topic   消息对应的话题
+     * @param message 消息
+     * @return
+     */
+    public static WhooshMessage copyFromMessage(@NonNull Topic topic, @NonNull Message message) {
+        WhooshMessage whooshMessage = WhooshMessage.class.cast(message);
+        whooshMessage.mTopic = topic;
+        return whooshMessage;
     }
 }

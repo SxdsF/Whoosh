@@ -1,15 +1,20 @@
 package com.sxdsf.whoosh;
 
 /**
- * Listener
+ * com.sxdsf.whoosh.Listener
  *
- * @author sunbowen
- * @date 2016/5/16-17:05
+ * @author 孙博闻
+ * @date 2016/7/1 10:18
  * @desc 消息的监听者
  */
 public class Listener<T> {
 
     final OnListen<T> mOnListen;
+
+    /**
+     * 当前listener执行的线程，默认是发送者线程
+     */
+    ThreadMode mThreadMode = ThreadMode.POSTING;
 
     protected Listener(OnListen<T> onListen) {
         this.mOnListen = onListen;
@@ -28,16 +33,30 @@ public class Listener<T> {
         mOnListen.call(carrier);
     }
 
-    public static <T> Listener<T> from(final T t) {
-        return Listener.create(new OnListen<T>() {
-            @Override
-            public void call(Carrier<? super T> carrier) {
-                carrier.onReceive(t);
-            }
-        });
-    }
-
-    public Listener<T> listenOn(Switcher switcher) {
+    /**
+     * 监听者在哪个线程监听
+     *
+     * @param threadMode 线程模式
+     * @return
+     */
+    public Listener<T> listenOn(ThreadMode threadMode) {
+        mThreadMode = threadMode;
+        Switcher switcher;
+        switch (threadMode) {
+            case MAIN:
+                switcher = Switchers.mainThread();
+                break;
+            case BACKGROUND:
+                switcher = Switchers.backgroundThread();
+                break;
+            case ASYNC:
+                switcher = Switchers.asyncThread();
+                break;
+            case POSTING:
+            default:
+                switcher = Switchers.postingThread();
+                break;
+        }
         return new Listener<>(new OnListenLift<>(mOnListen, new SwitchAlter<T>(switcher)));
     }
 
@@ -65,25 +84,24 @@ public class Listener<T> {
 
         @Override
         public Carrier<? super T> call(Carrier<? super T> carrier) {
-            return this.mSwitcher.switchIt(carrier);
+            return this.mSwitcher.switches(carrier);
         }
     }
 
     private static class OnListenLift<T> implements Listener.OnListen<T> {
 
-        private Listener.OnListen<T> parent;
-
-        private Listener.Alter<T> alter;
+        private Listener.OnListen<T> mParent;
+        private Listener.Alter<T> mAlter;
 
         public OnListenLift(Listener.OnListen<T> parent, Listener.Alter<T> alter) {
-            this.parent = parent;
-            this.alter = alter;
+            mParent = parent;
+            mAlter = alter;
         }
 
         @Override
         public void call(Carrier<? super T> rCarrier) {
-            Carrier<? super T> c = this.alter.call(rCarrier);
-            this.parent.call(c);
+            Carrier<? super T> c = mAlter.call(rCarrier);
+            mParent.call(c);
         }
     }
 }
