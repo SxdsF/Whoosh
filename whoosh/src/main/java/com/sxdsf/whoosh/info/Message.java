@@ -2,6 +2,9 @@ package com.sxdsf.whoosh.info;
 
 import android.support.annotation.NonNull;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * com.sxdsf.whoosh.info.Message
  *
@@ -27,7 +30,7 @@ public abstract class Message implements Information, Comparable<Message> {
     /**
      * 消息id
      */
-    public int mMessageId;
+    private final AtomicInteger mMessageId = new AtomicInteger();
     /**
      * 时间戳
      */
@@ -35,15 +38,19 @@ public abstract class Message implements Information, Comparable<Message> {
     /**
      * 优先级
      */
-    public int mPriority = NORM_PRIORITY;
+    private final AtomicInteger mPriority = new AtomicInteger(NORM_PRIORITY);
     /**
      * 是否是空消息
      */
-    public boolean mIsEmptyMessage;
+    private final AtomicBoolean mIsEmptyMessage = new AtomicBoolean(false);
+    /**
+     * 是否被发送过
+     */
+    private final AtomicBoolean mIsSent = new AtomicBoolean(false);
     /**
      * 是否被消费
      */
-    public boolean mIsConsumed;
+    private final AtomicBoolean mIsConsumed = new AtomicBoolean(false);
 
     protected Message() {
         this.mTimestamp = System.currentTimeMillis();
@@ -52,12 +59,84 @@ public abstract class Message implements Information, Comparable<Message> {
     @Override
     public int compareTo(@NonNull Message another) {
         int result = 0;
-        if (mPriority < another.mPriority) {
+        if (mPriority.get() < another.mPriority.get()) {
             result = -1;
-        } else if (mPriority > another.mPriority) {
+        } else if (mPriority.get() > another.mPriority.get()) {
             result = 1;
         }
         return result;
+    }
+
+    /**
+     * 获取消息Id
+     *
+     * @return
+     */
+    public int getMessageId() {
+        return mMessageId.get();
+    }
+
+    /**
+     * 设置消息Id
+     *
+     * @param messageId 消息Id
+     */
+    public void setMessageId(int messageId) {
+        mMessageId.set(messageId);
+    }
+
+    /**
+     * 获取消息优先级
+     *
+     * @return
+     */
+    public int getPriority() {
+        return mPriority.get();
+    }
+
+    /**
+     * 设置消息优先级
+     *
+     * @param priority
+     */
+    public void setPriority(int priority) {
+        mPriority.set(priority);
+    }
+
+    /**
+     * 判断是否是空消息
+     *
+     * @return
+     */
+    public boolean isEmptyMessage() {
+        return mIsEmptyMessage.get();
+    }
+
+    /**
+     * 判断是否被消费过
+     *
+     * @return
+     */
+    public boolean isConsumed() {
+        return mIsConsumed.get();
+    }
+
+    /**
+     * 设置是否被消费过得标记
+     *
+     * @param isConsumed 是否被消费过
+     */
+    public void setIsConsumed(boolean isConsumed) {
+        mIsConsumed.set(isConsumed);
+    }
+
+    /**
+     * 判断此消息是否被发送过，如果没有被发送过就会立马被设置为被发送过
+     *
+     * @return
+     */
+    public boolean isSent() {
+        return mIsSent.getAndSet(true);
     }
 
     /**
@@ -78,7 +157,7 @@ public abstract class Message implements Information, Comparable<Message> {
      */
     public static Message createEmptyMessage() {
         Message message = new WhooshMessage<>(null);
-        message.mIsEmptyMessage = true;
+        message.mIsEmptyMessage.set(true);
         return message;
     }
 }

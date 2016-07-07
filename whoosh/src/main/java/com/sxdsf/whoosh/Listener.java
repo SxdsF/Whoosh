@@ -1,36 +1,157 @@
 package com.sxdsf.whoosh;
 
+import android.support.annotation.NonNull;
+
+import com.sxdsf.whoosh.core.Adapter;
+import com.sxdsf.whoosh.core.Carrier;
+import com.sxdsf.whoosh.core.Filter;
+import com.sxdsf.whoosh.core.Publication;
+import com.sxdsf.whoosh.core.Publisher;
+import com.sxdsf.whoosh.core.Switcher;
+import com.sxdsf.whoosh.exception.WhooshException;
+import com.sxdsf.whoosh.info.Message;
+import com.sxdsf.whoosh.info.Topic;
+
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * com.sxdsf.whoosh.Listener
  *
  * @author 孙博闻
- * @date 2016/7/1 10:18
+ * @date 2016/7/7 8:41
  * @desc 消息的监听者
  */
-public class Listener<T> {
+public class Listener extends Publication<Message> implements ListenerShip, Comparable<Listener> {
 
-    final OnListen<T> mOnListen;
+    /**
+     * 默认的优先级
+     */
+    private static final int DEFAULT_PRIORITY = 0;
 
     /**
      * 当前listener执行的线程，默认是发送者线程
      */
     ThreadMode mThreadMode = ThreadMode.POSTING;
+    /**
+     * 当前listener的优先级，默认是0
+     */
+    int mPriority = DEFAULT_PRIORITY;
+    /**
+     * 当前listener的过滤器
+     */
+    List<Filter> mFilters;
+    /**
+     * 当前listener关心的主题
+     */
+    Topic mTopic;
+    /**
+     * 当前listener要注册到的服务
+     */
+    Whoosh mWhoosh;
+    /**
+     * 打印日志的拦截器，默认是系统提供的日志拦截器（什么都不做）
+     */
+    LogInterceptor mLogInterceptor = new DefaultLogInterceptor();
 
-    protected Listener(OnListen<T> onListen) {
-        this.mOnListen = onListen;
+    Listener(OnPublish<Message> onPublish, PublicationOnPublish<Message> tol) {
+        super(onPublish, tol);
     }
 
-    public static <T> Listener<T> create(OnListen<T> onListen) {
-        return new Listener<>(onListen);
+    @Override
+    public void onReceive(Message content) {
+        mLogInterceptor.preReceive(mTopic, this, content);
+        super.onReceive(content);
     }
 
     /**
-     * 监听者的监听方法
+     * 创建一个Listener
      *
-     * @param carrier 消息的载体
+     * @return
      */
-    public void listen(Carrier<T> carrier) {
-        mOnListen.call(carrier);
+    public static Listener create() {
+        PublicationOnPublish<Message> pop = new PublicationOnPublish<>();
+        return new Listener(pop, pop);
+    }
+
+    /**
+     * @param topic
+     * @param whoosh
+     * @return
+     */
+    public static Listener create(@NonNull Topic topic, @NonNull Whoosh whoosh) {
+        PublicationOnPublish<Message> pop = new PublicationOnPublish<>();
+        Listener listener = new Listener(pop, pop);
+        listener.mTopic = topic;
+        listener.mWhoosh = whoosh;
+        return listener;
+    }
+
+    /**
+     * 设置监听者的过滤器
+     *
+     * @param filters 过滤器
+     * @return
+     */
+    public Listener filters(Filter... filters) {
+        if (filters != null && filters.length > 0) {
+            mFilters = Arrays.asList(filters);
+        }
+        return this;
+    }
+
+    /**
+     * 传入打印log的拦截器
+     *
+     * @param logInterceptor 打印log的拦截器
+     * @return
+     */
+    public Listener log(@NonNull LogInterceptor logInterceptor) {
+        mLogInterceptor = logInterceptor;
+        return this;
+    }
+
+    /**
+     * 设置监听者的优先级
+     *
+     * @param priority 优先级
+     * @return
+     */
+    public Listener priority(int priority) {
+        mPriority = priority;
+        return this;
+    }
+
+    /**
+     * 做一个统一的处理
+     *
+     * @param converter 做统一处理的类
+     * @return
+     */
+    public Listener unify(@NonNull Converter converter) {
+        return converter.call(this);
+    }
+
+    /**
+     * 表示此listener关心哪个话题
+     *
+     * @param topic 话题
+     * @return
+     */
+    public Listener careAbout(@NonNull Topic topic) {
+        mTopic = topic;
+        return this;
+    }
+
+    /**
+     * 表示把此listener注册到哪个服务里
+     *
+     * @param whoosh
+     * @return
+     */
+    public Listener listenIn(@NonNull Whoosh whoosh) {
+        mWhoosh = whoosh;
+        return this;
     }
 
     /**
@@ -39,7 +160,7 @@ public class Listener<T> {
      * @param threadMode 线程模式
      * @return
      */
-    public Listener<T> listenOn(ThreadMode threadMode) {
+    public Listener listenOn(ThreadMode threadMode) {
         mThreadMode = threadMode;
         Switcher switcher;
         switch (threadMode) {
@@ -57,24 +178,77 @@ public class Listener<T> {
                 switcher = Switchers.postingThread();
                 break;
         }
-        return new Listener<>(new OnListenLift<>(mOnListen, new SwitchAlter<T>(switcher)));
+        mOnPublish = new OnPublishLift<>(mOnPublish, new SwitchAlter<Message>(switcher));
+        return this;
     }
 
-    public interface OnListen<T> extends Action<Carrier<? super T>> {
+    /**
+     * 监听者的监听方法
+     *
+     * @param carrier 消息的载体
+     */
+    public ListenerShip listen(@NonNull Carrier<Message> carrier) {
+        super.publish(carrier);
+        if (mWhoosh != null && mTopic != null) {
+            mLogInterceptor.preListen(mTopic, this);
+            if (isUnListened()) {
+                mWhoosh.register(mTopic, this);
+            } else {
+                //如果已经注册过，再注册会发一个异常到异常话题
+                mWhoosh.send(mWhoosh.WhooshException,
+                        Message.create(new WhooshException("Listener", "listen", "this listener is registered")));
+            }
+            mLogInterceptor.afterListen(mTopic, this);
+        }
+        return this;
     }
 
-    interface Action<R> {
-        void call(R t);
+    /**
+     * 适配方法，将此listener根据适配器适配成任何结果
+     *
+     * @param adapter 适配器
+     * @param <T>
+     * @return
+     */
+    public <T> T adaptTo(@NonNull Adapter<T, Listener> adapter) {
+        return adapter.adapt(this);
     }
 
-    public interface Alter<T> extends Function<Carrier<? super T>, Carrier<? super T>> {
+    @Override
+    public void unListen() {
+        if (mWhoosh != null && mTopic != null) {
+            mLogInterceptor.preUnListen(mTopic, this);
+            mWhoosh.unRegister(mTopic, this);
+            mLogInterceptor.afterUnListen(mTopic, this);
+        }
     }
 
-    interface Function<K, V> {
-        V call(K t);
+    @Override
+    public boolean isUnListened() {
+        boolean result = false;
+        if (mWhoosh != null && mTopic != null) {
+            result = !mWhoosh.isRegistered(mTopic, this);
+        }
+        return result;
     }
 
-    private static class SwitchAlter<T> implements Listener.Alter<T> {
+    @Override
+    public int compareTo(@NonNull Listener another) {
+        if (mPriority > another.mPriority) {
+            return 1;
+        }
+
+        if (mPriority == another.mPriority) {
+            return 0;
+        }
+
+        if (mPriority < another.mPriority) {
+            return -1;
+        }
+        return 0;
+    }
+
+    private static class SwitchAlter<T> implements Publisher.Alter<T> {
 
         private Switcher mSwitcher;
 
@@ -88,12 +262,12 @@ public class Listener<T> {
         }
     }
 
-    private static class OnListenLift<T> implements Listener.OnListen<T> {
+    private static class OnPublishLift<T> implements OnPublish<T> {
 
-        private Listener.OnListen<T> mParent;
-        private Listener.Alter<T> mAlter;
+        private OnPublish<T> mParent;
+        private Publisher.Alter<T> mAlter;
 
-        public OnListenLift(Listener.OnListen<T> parent, Listener.Alter<T> alter) {
+        public OnPublishLift(OnPublish<T> parent, Publisher.Alter<T> alter) {
             mParent = parent;
             mAlter = alter;
         }
@@ -102,6 +276,37 @@ public class Listener<T> {
         public void call(Carrier<? super T> rCarrier) {
             Carrier<? super T> c = mAlter.call(rCarrier);
             mParent.call(c);
+        }
+    }
+
+    /**
+     * 系统默认的拦截器
+     */
+    private static class DefaultLogInterceptor implements LogInterceptor {
+
+        @Override
+        public void preListen(Topic topic, Listener listener) {
+            //do nothing
+        }
+
+        @Override
+        public void afterListen(Topic topic, Listener listener) {
+            //do nothing
+        }
+
+        @Override
+        public void preReceive(Topic topic, Listener listener, Message message) {
+            //do nothing
+        }
+
+        @Override
+        public void preUnListen(Topic topic, Listener listener) {
+            //do nothing
+        }
+
+        @Override
+        public void afterUnListen(Topic topic, Listener listener) {
+            //do nothing
         }
     }
 }

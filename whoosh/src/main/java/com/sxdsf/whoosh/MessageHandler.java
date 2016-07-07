@@ -5,6 +5,8 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
+import com.sxdsf.whoosh.core.Carrier;
+
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;

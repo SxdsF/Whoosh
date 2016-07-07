@@ -3,6 +3,9 @@ package com.sxdsf.whoosh;
 import android.os.Looper;
 import android.util.Log;
 
+import com.sxdsf.whoosh.core.Carrier;
+import com.sxdsf.whoosh.core.Switcher;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

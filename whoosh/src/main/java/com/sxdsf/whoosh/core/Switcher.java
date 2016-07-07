@@ -1,19 +1,18 @@
-package com.sxdsf.whoosh;
+package com.sxdsf.whoosh.core;
 
 /**
- * com.sxdsf.whoosh.Switcher
+ * com.sxdsf.whoosh.core.Switcher
  *
  * @author 孙博闻
  * @date 2016/5/18 10:58
  * @desc 用于线程切换
  */
-interface Switcher {
+public interface Switcher {
 
     /**
      * 切换方法
      *
-     * @param carrier 被切换的消息承载者
-     * @param <T>
+     * @param carrier 被切换的内容载体
      * @return
      */
     <T> Carrier<? super T> switches(Carrier<? super T> carrier);

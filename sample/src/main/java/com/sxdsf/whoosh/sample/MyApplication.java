@@ -2,9 +2,7 @@ package com.sxdsf.whoosh.sample;
 
 import android.app.Application;
 
-import com.sxdsf.whoosh.Listener;
 import com.sxdsf.whoosh.Whoosh;
-import com.sxdsf.whoosh.info.Message;
 
 /**
  * MyApplication
@@ -16,7 +14,7 @@ import com.sxdsf.whoosh.info.Message;
 public class MyApplication extends Application {
 
 	/** 消息服务的实例 */
-	public static final Whoosh<Listener<Message>> WHOOSH = Whoosh.create();
+	public static final Whoosh WHOOSH = Whoosh.create();
 
 	@Override
 	public void onCreate() {

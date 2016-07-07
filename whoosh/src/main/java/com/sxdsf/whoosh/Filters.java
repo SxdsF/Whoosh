@@ -1,5 +1,6 @@
 package com.sxdsf.whoosh;
 
+import com.sxdsf.whoosh.core.Filter;
 import com.sxdsf.whoosh.info.Message;
 
 /**
@@ -66,7 +67,7 @@ public class Filters {
         public boolean filter(Message message) {
             boolean result = false;
             if (message != null) {
-                if (message.checkAndGet(mCls) != null) {
+                if (message.checkAndGet(mCls) != null || message.isEmptyMessage()) {
                     result = true;
                 }
             }
@@ -83,7 +84,7 @@ public class Filters {
         public boolean filter(Message message) {
             boolean result = false;
             if (message != null) {
-                result = !message.mIsConsumed;
+                result = !message.isConsumed();
             }
             return result;
         }
@@ -104,7 +105,7 @@ public class Filters {
         public boolean filter(Message message) {
             boolean result = false;
             if (message != null) {
-                if (mId == message.mMessageId) {
+                if (mId == message.getMessageId()) {
                     result = true;
                 }
             }

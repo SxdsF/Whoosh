@@ -5,13 +5,18 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import com.sxdsf.whoosh.Carrier;
 import com.sxdsf.whoosh.Filters;
 import com.sxdsf.whoosh.Listener;
+import com.sxdsf.whoosh.ListenerShip;
 import com.sxdsf.whoosh.ThreadMode;
+import com.sxdsf.whoosh.adapter.RxJavaAdapter;
+import com.sxdsf.whoosh.core.Carrier;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
 import com.sxdsf.whoosh.info.WhooshTopic;
+
+import rx.Subscription;
+import rx.functions.Action1;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -23,7 +28,11 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 基于话题的监听者
      */
-    private Listener<Message> mListener;
+    private ListenerShip mListenerShip;
+    /**
+     * RxJava方式
+     */
+    private Subscription mSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,14 +40,29 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // 根据话题生成一个监听者
-        mListener = MyApplication.WHOOSH.register(MainTopic, Filters.klass(String.class));
         // 监听者监听，其中Carrier作为消息的载体，收到消息后会执行onReceive方法
-        mListener.listenOn(ThreadMode.MAIN).listen(new Carrier<Message>() {
-            @Override
-            public void onReceive(Message content) {
-                System.out.println("MainActivity" + content.checkAndGet(String.class));
-            }
-        });
+        mListenerShip = Listener.
+                create(MainTopic, MyApplication.WHOOSH).
+                filters(Filters.klass(String.class)).
+                listenOn(ThreadMode.MAIN).
+                listen(new Carrier<Message>() {
+                    @Override
+                    public void onReceive(Message content) {
+                        System.out.println("MainActivity" + content.checkAndGet(String.class));
+                    }
+                });
+
+        mSubscription = Listener.
+                create(MainTopic, MyApplication.WHOOSH).
+                filters(Filters.klass(String.class)).
+                listenOn(ThreadMode.MAIN).
+                adaptTo(new RxJavaAdapter()).
+                subscribe(new Action1<Message>() {
+                    @Override
+                    public void call(Message message) {
+                        System.out.println("MainActivity--RxJava" + message.checkAndGet(String.class));
+                    }
+                });
 
         findViewById(R.id.whoosh).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -65,6 +89,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         //在onDestroy时解绑监听者
-        MyApplication.WHOOSH.unRegister(MainTopic, mListener);
+        if (!mListenerShip.isUnListened()) {
+            mListenerShip.unListen();
+        }
+        if (!mSubscription.isUnsubscribed()) {
+            mSubscription.unsubscribe();
+        }
     }
 }

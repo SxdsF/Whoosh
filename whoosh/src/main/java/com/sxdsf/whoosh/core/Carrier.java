@@ -1,11 +1,11 @@
-package com.sxdsf.whoosh;
+package com.sxdsf.whoosh.core;
 
 /**
- * com.sxdsf.whoosh.Carrier
+ * com.sxdsf.whoosh.core.Carrier
  *
  * @author sunbowen
  * @date 2016/5/16-17:07
- * @desc 消息的载体
+ * @desc 内容的载体
  */
 public interface Carrier<T> {
 

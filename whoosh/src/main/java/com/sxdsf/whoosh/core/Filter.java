@@ -1,9 +1,9 @@
-package com.sxdsf.whoosh;
+package com.sxdsf.whoosh.core;
 
 import com.sxdsf.whoosh.info.Message;
 
 /**
- * com.sxdsf.whoosh.Filter
+ * com.sxdsf.whoosh.core.Filter
  *
  * @author 孙博闻
  * @date 2016/7/1 10:18
