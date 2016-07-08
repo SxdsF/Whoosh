@@ -51,6 +51,10 @@ public abstract class Message implements Information, Comparable<Message> {
      * 是否被消费
      */
     private final AtomicBoolean mIsConsumed = new AtomicBoolean(false);
+    /**
+     * 是否是被废弃的，如果是，此条消息就不会再被发送下去了
+     */
+    private final AtomicBoolean mIsAbandoned = new AtomicBoolean(false);
 
     protected Message() {
         this.mTimestamp = System.currentTimeMillis();
@@ -137,6 +141,24 @@ public abstract class Message implements Information, Comparable<Message> {
      */
     public boolean isSent() {
         return mIsSent.getAndSet(true);
+    }
+
+    /**
+     * 判断此消息是否被废弃了，如果废弃了就不会再传递下去了
+     *
+     * @return
+     */
+    public boolean isAbandoned() {
+        return mIsAbandoned.get();
+    }
+
+    /**
+     * 设置消息是否是被废弃的
+     *
+     * @param isAbandoned 是否是被废弃的
+     */
+    public void setIsAbandoned(boolean isAbandoned) {
+        mIsAbandoned.set(isAbandoned);
     }
 
     /**

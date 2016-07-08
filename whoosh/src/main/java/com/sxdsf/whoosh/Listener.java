@@ -53,6 +53,10 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      * 打印日志的拦截器，默认是系统提供的日志拦截器（什么都不做）
      */
     LogInterceptor mLogInterceptor = new DefaultLogInterceptor();
+    /**
+     * 传递到此listener时会不会中断消息的派发，默认是false
+     */
+    boolean mInterruptDelivery = false;
 
     Listener(OnPublish<Message> onPublish, PublicationOnPublish<Message> tol) {
         super(onPublish, tol);
@@ -61,6 +65,10 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
     @Override
     public void onReceive(Message content) {
         mLogInterceptor.preReceive(mTopic, this, content);
+        //如果设置了传递到此listener中断消息派发，则把消息设置为被废弃的
+        if (mInterruptDelivery) {
+            content.setIsAbandoned(true);
+        }
         super.onReceive(content);
     }
 
@@ -75,8 +83,10 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
     }
 
     /**
-     * @param topic
-     * @param whoosh
+     * 创建一个listener
+     *
+     * @param topic  关心的话题
+     * @param whoosh whoosh服务
      * @return
      */
     public static Listener create(@NonNull Topic topic, @NonNull Whoosh whoosh) {
@@ -108,6 +118,17 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      */
     public Listener log(@NonNull LogInterceptor logInterceptor) {
         mLogInterceptor = logInterceptor;
+        return this;
+    }
+
+    /**
+     * 传递到此listener时会不会中断消息的派发
+     *
+     * @param interruptDelivery 是否中断派发
+     * @return
+     */
+    public Listener interruptDelivery(boolean interruptDelivery) {
+        mInterruptDelivery = interruptDelivery;
         return this;
     }
 

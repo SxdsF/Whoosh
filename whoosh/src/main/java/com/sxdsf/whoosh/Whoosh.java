@@ -152,32 +152,51 @@ public class Whoosh {
      * @param message 消息
      */
     public void send(@NonNull Topic topic, @NonNull final Message message) {
-        mLock.lock();
-        try {
-            List<Listener> publications = mStorageUnit.get(topic);
-            if (publications == null) {
-                return;
-            }
-            for (final Listener publication : publications) {
-                if (publication == null) {
-                    continue;
+        //如果没有被发送过才发送
+        if (!message.isSent()) {
+            mLock.lock();
+            try {
+                List<Listener> publications = mStorageUnit.get(topic);
+                if (publications == null) {
+                    return;
                 }
-                boolean isThroughFilters = true;
-                List<Filter> filters = publication.mFilters;
-                if (filters != null) {
-                    for (Filter filter : filters) {
-                        if (filter == null) {
-                            continue;
+                for (final Listener publication : publications) {
+                    //如果消息没有被废弃就不再派发了
+                    if (message.isAbandoned()) {
+                        break;
+                    }
+                    if (publication == null) {
+                        continue;
+                    }
+                    boolean isThroughFilters = true;
+                    List<Filter> filters = publication.mFilters;
+                    if (filters != null) {
+                        for (Filter filter : filters) {
+                            if (filter == null) {
+                                continue;
+                            }
+                            isThroughFilters = isThroughFilters && filter.filter(message);
                         }
-                        isThroughFilters = isThroughFilters && filter.filter(message);
+                    }
+                    if (isThroughFilters) {
+                        publication.onReceive(message);
+                        //只要调用过onReceive就把消息设置为已经消费过
+                        message.setIsConsumed(true);
                     }
                 }
-                if (isThroughFilters) {
-                    publication.onReceive(message);
-                }
+            } finally {
+                mLock.unlock();
             }
-        } finally {
-            mLock.unlock();
         }
+    }
+
+    /**
+     * 创建一个消息的生产者
+     *
+     * @param topic 话题
+     * @return
+     */
+    public Producer createProducer(@NonNull Topic topic) {
+        return new Producer(topic, mStorageUnit, mLock);
     }
 }

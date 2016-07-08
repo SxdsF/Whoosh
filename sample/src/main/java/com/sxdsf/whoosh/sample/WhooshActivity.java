@@ -42,32 +42,6 @@ public class WhooshActivity extends AppCompatActivity {
             final int finalI = i;
             Listener.
                     create().
-                    log(new LogInterceptor() {
-                        @Override
-                        public void preListen(Topic topic, Listener listener) {
-                            System.out.println("preListen" + topic + listener);
-                        }
-
-                        @Override
-                        public void afterListen(Topic topic, Listener listener) {
-                            System.out.println("afterListen" + topic + listener);
-                        }
-
-                        @Override
-                        public void preReceive(Topic topic, Listener listener, Message message) {
-                            System.out.println("preReceive" + topic + listener + message);
-                        }
-
-                        @Override
-                        public void preUnListen(Topic topic, Listener listener) {
-                            System.out.println("preUnListen" + topic + listener);
-                        }
-
-                        @Override
-                        public void afterUnListen(Topic topic, Listener listener) {
-                            System.out.println("afterUnListen" + topic + listener);
-                        }
-                    }).
                     priority(finalI).
                     unify(new Converter() {
                         @Override
@@ -75,7 +49,33 @@ public class WhooshActivity extends AppCompatActivity {
                             return listener.
                                     listenOn(ThreadMode.MAIN).
                                     careAbout(TEST).
-                                    listenIn(MyApplication.WHOOSH);
+                                    listenIn(MyApplication.WHOOSH).
+                                    log(new LogInterceptor() {
+                                        @Override
+                                        public void preListen(Topic topic, Listener listener) {
+                                            System.out.println("preListen" + topic + listener);
+                                        }
+
+                                        @Override
+                                        public void afterListen(Topic topic, Listener listener) {
+                                            System.out.println("afterListen" + topic + listener);
+                                        }
+
+                                        @Override
+                                        public void preReceive(Topic topic, Listener listener, Message message) {
+                                            System.out.println("preReceive" + topic + listener + message);
+                                        }
+
+                                        @Override
+                                        public void preUnListen(Topic topic, Listener listener) {
+                                            System.out.println("preUnListen" + topic + listener);
+                                        }
+
+                                        @Override
+                                        public void afterUnListen(Topic topic, Listener listener) {
+                                            System.out.println("afterUnListen" + topic + listener);
+                                        }
+                                    });
                         }
                     }).
                     listen(new Carrier<Message>() {
