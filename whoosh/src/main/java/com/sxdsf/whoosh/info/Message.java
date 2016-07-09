@@ -2,6 +2,9 @@ package com.sxdsf.whoosh.info;
 
 import android.support.annotation.NonNull;
 
+import com.sxdsf.whoosh.Producer;
+
+import java.lang.ref.SoftReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,6 +58,10 @@ public abstract class Message implements Information, Comparable<Message> {
      * 是否是被废弃的，如果是，此条消息就不会再被发送下去了
      */
     private final AtomicBoolean mIsAbandoned = new AtomicBoolean(false);
+    /**
+     * 发送此消息的producer
+     */
+    private SoftReference<Producer> mProducer;
 
     protected Message() {
         this.mTimestamp = System.currentTimeMillis();
@@ -159,6 +166,28 @@ public abstract class Message implements Information, Comparable<Message> {
      */
     public void setIsAbandoned(boolean isAbandoned) {
         mIsAbandoned.set(isAbandoned);
+    }
+
+    /**
+     * 设置此消息对应的producer
+     *
+     * @param producer 消息生产者
+     */
+    public void setProducer(@NonNull Producer producer) {
+        mProducer = new SoftReference<>(producer);
+    }
+
+    /**
+     * 设置消息的回复，回复给消息发送者
+     *
+     * @param content 要回复的内容
+     * @param <T>
+     */
+    public <T> void reply(T content) {
+        Producer producer = mProducer.get();
+        if (producer != null) {
+            producer.reply(Message.create(content));
+        }
     }
 
     /**

@@ -5,7 +5,6 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.sxdsf.whoosh.Converter;
 import com.sxdsf.whoosh.Listener;
-import com.sxdsf.whoosh.LogInterceptor;
 import com.sxdsf.whoosh.ThreadMode;
 import com.sxdsf.whoosh.core.Carrier;
 import com.sxdsf.whoosh.info.Destination;
@@ -32,7 +31,7 @@ public class WhooshActivity extends AppCompatActivity {
         setContentView(R.layout.activity_second);
 
         // 发送一个消息
-        MyApplication.WHOOSH.send(MainActivity.MainTopic, Message.create("测试"));
+        MyApplication.WHOOSH.createProducer(MainActivity.MainTopic).send(Message.create("测试"));
 
         //接收从上一个activity传过来的信息
         System.out
@@ -49,38 +48,13 @@ public class WhooshActivity extends AppCompatActivity {
                             return listener.
                                     listenOn(ThreadMode.MAIN).
                                     careAbout(TEST).
-                                    listenIn(MyApplication.WHOOSH).
-                                    log(new LogInterceptor() {
-                                        @Override
-                                        public void preListen(Topic topic, Listener listener) {
-                                            System.out.println("preListen" + topic + listener);
-                                        }
-
-                                        @Override
-                                        public void afterListen(Topic topic, Listener listener) {
-                                            System.out.println("afterListen" + topic + listener);
-                                        }
-
-                                        @Override
-                                        public void preReceive(Topic topic, Listener listener, Message message) {
-                                            System.out.println("preReceive" + topic + listener + message);
-                                        }
-
-                                        @Override
-                                        public void preUnListen(Topic topic, Listener listener) {
-                                            System.out.println("preUnListen" + topic + listener);
-                                        }
-
-                                        @Override
-                                        public void afterUnListen(Topic topic, Listener listener) {
-                                            System.out.println("afterUnListen" + topic + listener);
-                                        }
-                                    });
+                                    listenIn(MyApplication.WHOOSH);
                         }
                     }).
                     listen(new Carrier<Message>() {
                         @Override
                         public void onReceive(Message content) {
+                            content.reply("接收到了");
                             System.out.println("一共调用了" + count.incrementAndGet() + "第" + finalI + "回调" + content.checkAndGet(String.class) + System.currentTimeMillis() + Thread.currentThread());
                         }
                     });
@@ -92,7 +66,15 @@ public class WhooshActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     System.out.println("第" + finalI + "个线程发送" + System.currentTimeMillis() + Thread.currentThread());
-                    MyApplication.WHOOSH.send(TEST, Message.create("第" + finalI + "个线程发送"));
+                    MyApplication.WHOOSH.
+                            createProducer(TEST).
+                            setReply(new Carrier<Message>() {
+                                @Override
+                                public void onReceive(Message content) {
+                                    System.out.println(content.checkAndGet(String.class));
+                                }
+                            }).
+                            send(Message.create("第" + finalI + "个线程发送"));
                 }
             }).start();
         }

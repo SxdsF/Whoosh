@@ -216,8 +216,7 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
                 mWhoosh.register(mTopic, this);
             } else {
                 //如果已经注册过，再注册会发一个异常到异常话题
-                mWhoosh.send(mWhoosh.WhooshException,
-                        Message.create(new WhooshException("Listener", "listen", "this listener is registered")));
+                mWhoosh.createProducer(mWhoosh.WhooshException).send(Message.create(new WhooshException("Listener", "listen", "this listener is registered")));
             }
             mLogInterceptor.afterListen(mTopic, this);
         }

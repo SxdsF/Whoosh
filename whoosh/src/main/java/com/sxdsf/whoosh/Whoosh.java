@@ -3,13 +3,11 @@ package com.sxdsf.whoosh;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.sxdsf.whoosh.core.Filter;
 import com.sxdsf.whoosh.info.Destination;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
 import com.sxdsf.whoosh.info.WhooshTopic;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -143,51 +141,6 @@ public class Whoosh {
      */
     boolean isRegistered(@NonNull Topic topic, @NonNull Listener listener) {
         return mStorageUnit.contains(topic, listener);
-    }
-
-    /**
-     * 基于某一个话题，发送一个消息
-     *
-     * @param topic   话题
-     * @param message 消息
-     */
-    public void send(@NonNull Topic topic, @NonNull final Message message) {
-        //如果没有被发送过才发送
-        if (!message.isSent()) {
-            mLock.lock();
-            try {
-                List<Listener> publications = mStorageUnit.get(topic);
-                if (publications == null) {
-                    return;
-                }
-                for (final Listener publication : publications) {
-                    //如果消息没有被废弃就不再派发了
-                    if (message.isAbandoned()) {
-                        break;
-                    }
-                    if (publication == null) {
-                        continue;
-                    }
-                    boolean isThroughFilters = true;
-                    List<Filter> filters = publication.mFilters;
-                    if (filters != null) {
-                        for (Filter filter : filters) {
-                            if (filter == null) {
-                                continue;
-                            }
-                            isThroughFilters = isThroughFilters && filter.filter(message);
-                        }
-                    }
-                    if (isThroughFilters) {
-                        publication.onReceive(message);
-                        //只要调用过onReceive就把消息设置为已经消费过
-                        message.setIsConsumed(true);
-                    }
-                }
-            } finally {
-                mLock.unlock();
-            }
-        }
     }
 
     /**

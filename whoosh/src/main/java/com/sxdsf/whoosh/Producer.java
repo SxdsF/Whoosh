@@ -2,6 +2,7 @@ package com.sxdsf.whoosh;
 
 import android.support.annotation.NonNull;
 
+import com.sxdsf.whoosh.core.Carrier;
 import com.sxdsf.whoosh.core.Filter;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
@@ -17,14 +18,53 @@ import java.util.concurrent.locks.Lock;
  * @desc 消息的生产者
  */
 public class Producer {
+
+    /**
+     * 当前发送者要发送消息的话题
+     */
     private final Topic mTopic;
+    /**
+     * 存储监听者的存储单元
+     */
     private final StorageUnit mStorageUnit;
+    /**
+     * 锁
+     */
     private final Lock mLock;
+
+    /**
+     * 接收回复的消息
+     */
+    private Carrier<Message> mReplyMessageCarrier;
 
     Producer(Topic topic, StorageUnit storageUnit, Lock lock) {
         mTopic = topic;
         mStorageUnit = storageUnit;
         mLock = lock;
+    }
+
+    /**
+     * 设置接收回复消息的消息承载者
+     *
+     * @param carrier 消息承载者
+     * @return
+     */
+    public Producer setReply(Carrier<Message> carrier) {
+        mReplyMessageCarrier = carrier;
+        return this;
+    }
+
+    /**
+     * 回复消息
+     *
+     * @param message 消息
+     */
+    public void reply(@NonNull Message message) {
+        if (!message.isSent()) {
+            if (mReplyMessageCarrier != null) {
+                mReplyMessageCarrier.onReceive(message);
+            }
+        }
     }
 
     /**
@@ -35,6 +75,7 @@ public class Producer {
     public void send(@NonNull Message message) {
         //如果没有被发送过才发送
         if (!message.isSent()) {
+            message.setProducer(this);
             mLock.lock();
             try {
                 List<Listener> publications = mStorageUnit.get(mTopic);
