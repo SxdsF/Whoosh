@@ -2,8 +2,6 @@ package com.sxdsf.whoosh;
 
 import android.support.annotation.NonNull;
 
-import com.sxdsf.whoosh.core.Carrier;
-import com.sxdsf.whoosh.core.Filter;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
 
@@ -35,7 +33,7 @@ public class Producer {
     /**
      * 接收回复的消息
      */
-    private Carrier<Message> mReplyMessageCarrier;
+    private Carrier mReplyMessageCarrier;
 
     Producer(Topic topic, StorageUnit storageUnit, Lock lock) {
         mTopic = topic;
@@ -49,7 +47,7 @@ public class Producer {
      * @param carrier 消息承载者
      * @return
      */
-    public Producer setReply(Carrier<Message> carrier) {
+    public Producer setReply(Carrier carrier) {
         mReplyMessageCarrier = carrier;
         return this;
     }

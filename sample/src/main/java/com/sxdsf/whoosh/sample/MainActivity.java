@@ -10,7 +10,7 @@ import com.sxdsf.whoosh.Listener;
 import com.sxdsf.whoosh.ListenerShip;
 import com.sxdsf.whoosh.ThreadMode;
 import com.sxdsf.whoosh.adapter.RxJavaAdapter;
-import com.sxdsf.whoosh.core.Carrier;
+import com.sxdsf.whoosh.Carrier;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
 import com.sxdsf.whoosh.info.WhooshTopic;
@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
                 create(MainTopic, MyApplication.WHOOSH).
                 filters(Filters.klass(String.class)).
                 listenOn(ThreadMode.MAIN).
-                listen(new Carrier<Message>() {
+                listen(new Carrier() {
                     @Override
                     public void onReceive(Message content) {
                         System.out.println("MainActivity" + content.checkAndGet(String.class));

@@ -5,7 +5,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
-import com.sxdsf.whoosh.core.Carrier;
+import com.sxdsf.whoosh.info.Message;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -116,8 +116,8 @@ public class MessageHandler extends Handler {
         }
     }
 
-    public static class Temp<T> {
-        public Carrier<T> mCarrier;
-        public T mMessage;
+    public static class Temp {
+        public Carrier mCarrier;
+        public Message mMessage;
     }
 }

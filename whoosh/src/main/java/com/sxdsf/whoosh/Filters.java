@@ -1,6 +1,5 @@
 package com.sxdsf.whoosh;
 
-import com.sxdsf.whoosh.core.Filter;
 import com.sxdsf.whoosh.info.Message;
 
 /**

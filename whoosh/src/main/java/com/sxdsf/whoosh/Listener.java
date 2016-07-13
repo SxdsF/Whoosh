@@ -2,12 +2,10 @@ package com.sxdsf.whoosh;
 
 import android.support.annotation.NonNull;
 
-import com.sxdsf.whoosh.core.Adapter;
-import com.sxdsf.whoosh.core.Carrier;
-import com.sxdsf.whoosh.core.Filter;
-import com.sxdsf.whoosh.core.Publication;
-import com.sxdsf.whoosh.core.Publisher;
-import com.sxdsf.whoosh.core.Switcher;
+import com.sxdsf.echo.Caster;
+import com.sxdsf.echo.OnCast;
+import com.sxdsf.echo.Receiver;
+import com.sxdsf.echo.Switcher;
 import com.sxdsf.whoosh.exception.WhooshException;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
@@ -22,7 +20,7 @@ import java.util.List;
  * @date 2016/7/7 8:41
  * @desc 消息的监听者
  */
-public class Listener extends Publication<Message> implements ListenerShip, Comparable<Listener> {
+public class Listener extends Caster<Message> implements Carrier, ListenerShip, Comparable<Listener> {
 
     /**
      * 默认的优先级
@@ -58,18 +56,11 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      */
     boolean mInterruptDelivery = false;
 
-    Listener(OnPublish<Message> onPublish, PublicationOnPublish<Message> tol) {
-        super(onPublish, tol);
-    }
+    private final ListenerOnCast mLoc;
 
-    @Override
-    public void onReceive(Message content) {
-        mLogInterceptor.preReceive(mTopic, this, content);
-        //如果设置了传递到此listener中断消息派发，则把消息设置为被废弃的
-        if (mInterruptDelivery) {
-            content.setIsAbandoned(true);
-        }
-        super.onReceive(content);
+    Listener(OnCast<Message> onCast, ListenerOnCast loc) {
+        super(onCast);
+        mLoc = loc;
     }
 
     /**
@@ -78,8 +69,8 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      * @return
      */
     public static Listener create() {
-        PublicationOnPublish<Message> pop = new PublicationOnPublish<>();
-        return new Listener(pop, pop);
+        ListenerOnCast loc = new ListenerOnCast();
+        return new Listener(loc, loc);
     }
 
     /**
@@ -90,11 +81,21 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      * @return
      */
     public static Listener create(@NonNull Topic topic, @NonNull Whoosh whoosh) {
-        PublicationOnPublish<Message> pop = new PublicationOnPublish<>();
-        Listener listener = new Listener(pop, pop);
+        ListenerOnCast loc = new ListenerOnCast();
+        Listener listener = new Listener(loc, loc);
         listener.mTopic = topic;
         listener.mWhoosh = whoosh;
         return listener;
+    }
+
+    @Override
+    public void onReceive(Message content) {
+        mLogInterceptor.preReceive(mTopic, this, content);
+        //如果设置了传递到此listener中断消息派发，则把消息设置为被废弃的
+        if (mInterruptDelivery) {
+            content.setIsAbandoned(true);
+        }
+        mLoc.mRawCarrier.onReceive(content);
     }
 
     /**
@@ -150,7 +151,7 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      * @return
      */
     public Listener unify(@NonNull Converter converter) {
-        return converter.call(this);
+        return (Listener) super.convert(converter);
     }
 
     /**
@@ -183,7 +184,7 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      */
     public Listener listenOn(ThreadMode threadMode) {
         mThreadMode = threadMode;
-        Switcher switcher;
+        Switcher<Message> switcher;
         switch (threadMode) {
             case MAIN:
                 switcher = Switchers.mainThread();
@@ -199,8 +200,7 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
                 switcher = Switchers.postingThread();
                 break;
         }
-        mOnPublish = new OnPublishLift<>(mOnPublish, new SwitchAlter<Message>(switcher));
-        return this;
+        return (Listener) super.receiveOn(switcher);
     }
 
     /**
@@ -208,8 +208,8 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
      *
      * @param carrier 消息的载体
      */
-    public ListenerShip listen(@NonNull Carrier<Message> carrier) {
-        super.publish(carrier);
+    public ListenerShip listen(@NonNull Carrier carrier) {
+        super.cast(carrier);
         if (mWhoosh != null && mTopic != null) {
             mLogInterceptor.preListen(mTopic, this);
             if (isUnListened()) {
@@ -268,37 +268,6 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
         return 0;
     }
 
-    private static class SwitchAlter<T> implements Publisher.Alter<T> {
-
-        private Switcher mSwitcher;
-
-        public SwitchAlter(Switcher switcher) {
-            mSwitcher = switcher;
-        }
-
-        @Override
-        public Carrier<? super T> call(Carrier<? super T> carrier) {
-            return this.mSwitcher.switches(carrier);
-        }
-    }
-
-    private static class OnPublishLift<T> implements OnPublish<T> {
-
-        private OnPublish<T> mParent;
-        private Publisher.Alter<T> mAlter;
-
-        public OnPublishLift(OnPublish<T> parent, Publisher.Alter<T> alter) {
-            mParent = parent;
-            mAlter = alter;
-        }
-
-        @Override
-        public void call(Carrier<? super T> rCarrier) {
-            Carrier<? super T> c = mAlter.call(rCarrier);
-            mParent.call(c);
-        }
-    }
-
     /**
      * 系统默认的拦截器
      */
@@ -327,6 +296,16 @@ public class Listener extends Publication<Message> implements ListenerShip, Comp
         @Override
         public void afterUnListen(Topic topic, Listener listener) {
             //do nothing
+        }
+    }
+
+    private static class ListenerOnCast implements OnCast<Message> {
+
+        Carrier mRawCarrier;
+
+        @Override
+        public void call(Receiver<Message> tReceiver) {
+            mRawCarrier = (Carrier) tReceiver;
         }
     }
 }

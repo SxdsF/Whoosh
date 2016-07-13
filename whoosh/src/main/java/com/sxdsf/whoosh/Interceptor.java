@@ -1,7 +1,7 @@
-package com.sxdsf.whoosh.core;
+package com.sxdsf.whoosh;
 
 /**
- * com.sxdsf.whoosh.core.Interceptor
+ * com.sxdsf.whoosh.Interceptor
  *
  * @author 孙博闻
  * @date 2016/7/7 17:56

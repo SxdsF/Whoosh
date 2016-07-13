@@ -1,8 +1,8 @@
 package com.sxdsf.whoosh.adapter;
 
 import com.sxdsf.whoosh.Listener;
-import com.sxdsf.whoosh.core.Adapter;
-import com.sxdsf.whoosh.core.Carrier;
+import com.sxdsf.whoosh.Adapter;
+import com.sxdsf.whoosh.Carrier;
 import com.sxdsf.whoosh.info.Message;
 
 import rx.Observable;
@@ -34,7 +34,7 @@ public class RxJavaAdapter implements Adapter<Observable<Message>, Listener> {
         public void call(final Subscriber<? super Message> subscriber) {
             synchronized (mOriginalPublisher) {
                 RequestArbiter requestArbiter = new RequestArbiter(mOriginalPublisher);
-                mOriginalPublisher.listen(new Carrier<Message>() {
+                mOriginalPublisher.listen(new Carrier() {
                     @Override
                     public void onReceive(Message content) {
                         subscriber.onNext(content);

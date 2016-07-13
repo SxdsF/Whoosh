@@ -3,10 +3,10 @@ package com.sxdsf.whoosh.sample;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import com.sxdsf.whoosh.Carrier;
 import com.sxdsf.whoosh.Converter;
 import com.sxdsf.whoosh.Listener;
 import com.sxdsf.whoosh.ThreadMode;
-import com.sxdsf.whoosh.core.Carrier;
 import com.sxdsf.whoosh.info.Destination;
 import com.sxdsf.whoosh.info.Message;
 import com.sxdsf.whoosh.info.Topic;
@@ -44,14 +44,14 @@ public class WhooshActivity extends AppCompatActivity {
                     priority(finalI).
                     unify(new Converter() {
                         @Override
-                        public Listener call(Listener listener) {
+                        public Listener convert(Listener listener) {
                             return listener.
                                     listenOn(ThreadMode.MAIN).
                                     careAbout(TEST).
                                     listenIn(MyApplication.WHOOSH);
                         }
                     }).
-                    listen(new Carrier<Message>() {
+                    listen(new Carrier() {
                         @Override
                         public void onReceive(Message content) {
                             content.reply("接收到了");
@@ -68,7 +68,7 @@ public class WhooshActivity extends AppCompatActivity {
                     System.out.println("第" + finalI + "个线程发送" + System.currentTimeMillis() + Thread.currentThread());
                     MyApplication.WHOOSH.
                             createProducer(TEST).
-                            setReply(new Carrier<Message>() {
+                            setReply(new Carrier() {
                                 @Override
                                 public void onReceive(Message content) {
                                     System.out.println(content.checkAndGet(String.class));

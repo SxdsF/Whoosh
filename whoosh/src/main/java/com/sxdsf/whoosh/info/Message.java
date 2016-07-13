@@ -2,6 +2,7 @@ package com.sxdsf.whoosh.info;
 
 import android.support.annotation.NonNull;
 
+import com.sxdsf.echo.Voice;
 import com.sxdsf.whoosh.Producer;
 
 import java.lang.ref.SoftReference;
@@ -15,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @date 2015/12/17 23:41
  * @desc 消息类，继承自信息接口
  */
-public abstract class Message implements Information, Comparable<Message> {
+public abstract class Message implements Voice, Information, Comparable<Message> {
 
     /**
      * 最小优先级

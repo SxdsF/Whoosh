@@ -3,8 +3,9 @@ package com.sxdsf.whoosh;
 import android.os.Looper;
 import android.util.Log;
 
-import com.sxdsf.whoosh.core.Carrier;
-import com.sxdsf.whoosh.core.Switcher;
+import com.sxdsf.echo.Receiver;
+import com.sxdsf.echo.Switcher;
+import com.sxdsf.whoosh.info.Message;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -23,19 +24,19 @@ class Switchers {
     /**
      * 主线程的切换者
      */
-    private final Switcher MAIN;
+    private final Switcher<Message> MAIN;
     /**
      * 发送者线程的切换者
      */
-    private final Switcher POSTING;
+    private final Switcher<Message> POSTING;
     /**
      * 后台线程的切换者
      */
-    private final Switcher BACKGROUND;
+    private final Switcher<Message> BACKGROUND;
     /**
      * 异步线程的切换者
      */
-    private final Switcher ASYNC;
+    private final Switcher<Message> ASYNC;
 
     /**
      * 单一实例
@@ -64,7 +65,7 @@ class Switchers {
      *
      * @return
      */
-    static Switcher mainThread() {
+    static Switcher<Message> mainThread() {
         return INSTANCE.MAIN;
     }
 
@@ -73,7 +74,7 @@ class Switchers {
      *
      * @return
      */
-    static Switcher postingThread() {
+    static Switcher<Message> postingThread() {
         return INSTANCE.POSTING;
     }
 
@@ -82,7 +83,7 @@ class Switchers {
      *
      * @return
      */
-    static Switcher backgroundThread() {
+    static Switcher<Message> backgroundThread() {
         return INSTANCE.BACKGROUND;
     }
 
@@ -91,14 +92,14 @@ class Switchers {
      *
      * @return
      */
-    static Switcher asyncThread() {
+    static Switcher<Message> asyncThread() {
         return INSTANCE.ASYNC;
     }
 
     /**
      * 主线程的切换类
      */
-    private static class MainThreadSwitcher implements Switcher {
+    private static class MainThreadSwitcher implements Switcher<Message> {
         private final MessageHandler mMessageHandler;
 
         public MainThreadSwitcher() {
@@ -106,26 +107,26 @@ class Switchers {
         }
 
         @Override
-        public <T> Carrier<? super T> switches(Carrier<? super T> carrier) {
-            return new MainSwitchCarrier<>(carrier, mMessageHandler);
+        public Receiver<Message> switches(Receiver<Message> receiver) {
+            return new MainSwitchCarrier(receiver, mMessageHandler);
         }
     }
 
     /**
      * 发送者线程的切换类
      */
-    private static class PostingThreadSwitcher implements Switcher {
+    private static class PostingThreadSwitcher implements Switcher<Message> {
 
         @Override
-        public <T> Carrier<? super T> switches(Carrier<? super T> carrier) {
-            return carrier;
+        public Receiver<Message> switches(Receiver<Message> receiver) {
+            return receiver;
         }
     }
 
     /**
      * 后台线程的切换类
      */
-    private static class BackgroundThreadSwitcher implements Switcher {
+    private static class BackgroundThreadSwitcher implements Switcher<Message> {
 
         private final BlockingQueue<MessageHandler.Temp> mTaskQueue;
 
@@ -134,15 +135,15 @@ class Switchers {
         }
 
         @Override
-        public <T> Carrier<? super T> switches(Carrier<? super T> carrier) {
-            return new BackgroundSwitchCarrier<>(carrier, mTaskQueue);
+        public Receiver<Message> switches(Receiver<Message> receiver) {
+            return new BackgroundSwitchCarrier(receiver, mTaskQueue);
         }
     }
 
     /**
      * 异步线程的切换者
      */
-    private static class AsyncThreadSwitcher implements Switcher {
+    private static class AsyncThreadSwitcher implements Switcher<Message> {
 
         private final BlockingQueue<MessageHandler.Temp> mTaskQueue;
 
@@ -151,41 +152,37 @@ class Switchers {
         }
 
         @Override
-        public <T> Carrier<? super T> switches(Carrier<? super T> carrier) {
-            return new AsyncSwitchCarrier<>(carrier, mTaskQueue);
+        public Receiver<Message> switches(Receiver<Message> receiver) {
+            return new AsyncSwitchCarrier(receiver, mTaskQueue);
         }
     }
 
     /**
      * 线程变换基本处理的类
-     *
-     * @param <T>
      */
-    private static abstract class SwitchCarrier<T> implements Carrier<T> {
+    private static abstract class SwitchCarrier implements Carrier {
 
-        protected Carrier<? super T> mRawCarrier;
+        protected Carrier mRawCarrier;
 
-        public SwitchCarrier(Carrier<? super T> rawCarrier) {
-            mRawCarrier = rawCarrier;
+        public SwitchCarrier(Receiver<Message> rawCarrier) {
+            mRawCarrier = (Carrier) rawCarrier;
         }
     }
 
     /**
      * 主线程的处理
-     *
-     * @param <T>
      */
-    private static class MainSwitchCarrier<T> extends SwitchCarrier<T> {
+    private static class MainSwitchCarrier extends SwitchCarrier {
 
         private MessageHandler mMessageHandler;
 
-        public MainSwitchCarrier(Carrier<? super T> rawCarrier, MessageHandler messageHandler) {
+        public MainSwitchCarrier(Receiver<Message> rawCarrier, MessageHandler messageHandler) {
             super(rawCarrier);
             mMessageHandler = messageHandler;
         }
 
         @Override
-        public void onReceive(T content) {
+        public void onReceive(Message content) {
             if (Looper.getMainLooper() == Looper.myLooper()) {
                 mRawCarrier.onReceive(content);
             } else {
@@ -202,23 +199,21 @@ class Switchers {
 
     /**
      * 后台线程的处理
-     *
-     * @param <T>
      */
-    private static class BackgroundSwitchCarrier<T> extends SwitchCarrier<T> {
+    private static class BackgroundSwitchCarrier extends SwitchCarrier {
 
         private final BlockingQueue<MessageHandler.Temp> mTaskQueue;
 
-        public BackgroundSwitchCarrier(Carrier<? super T> rawCarrier, BlockingQueue<MessageHandler.Temp> taskQueue) {
+        public BackgroundSwitchCarrier(Receiver<Message> rawCarrier, BlockingQueue<MessageHandler.Temp> taskQueue) {
             super(rawCarrier);
             mTaskQueue = taskQueue;
         }
 
         @Override
-        public void onReceive(T content) {
+        public void onReceive(Message content) {
             if (Looper.getMainLooper() == Looper.myLooper()) {
                 try {
-                    MessageHandler.Temp temp = new MessageHandler.Temp<>();
+                    MessageHandler.Temp temp = new MessageHandler.Temp();
                     temp.mCarrier = mRawCarrier;
                     temp.mMessage = content;
                     mTaskQueue.put(temp);
@@ -233,22 +228,20 @@ class Switchers {
 
     /**
      * 异步线程的处理
-     *
-     * @param <T>
      */
-    private static class AsyncSwitchCarrier<T> extends SwitchCarrier<T> {
+    private static class AsyncSwitchCarrier extends SwitchCarrier {
 
         private final BlockingQueue<MessageHandler.Temp> mTaskQueue;
 
-        public AsyncSwitchCarrier(Carrier<? super T> rawCarrier, BlockingQueue<MessageHandler.Temp> taskQueue) {
+        public AsyncSwitchCarrier(Receiver<Message> rawCarrier, BlockingQueue<MessageHandler.Temp> taskQueue) {
             super(rawCarrier);
             mTaskQueue = taskQueue;
         }
 
         @Override
-        public void onReceive(T content) {
+        public void onReceive(Message content) {
             try {
-                MessageHandler.Temp temp = new MessageHandler.Temp<>();
+                MessageHandler.Temp temp = new MessageHandler.Temp();
                 temp.mCarrier = mRawCarrier;
                 temp.mMessage = content;
                 mTaskQueue.put(temp);
