@@ -7,7 +7,7 @@ package com.sxdsf.whoosh;
  * @date 2016/7/1 10:18
  * @desc 返回结果适配类
  */
-public interface Adapter<T, R extends Listener> {
+public interface Adapter<T extends Listener, R> {
 
     /**
      * 把系统默认的适配成T
@@ -15,5 +15,5 @@ public interface Adapter<T, R extends Listener> {
      * @param listener 系统默认的监听者
      * @return
      */
-    T adapt(R listener);
+    R adapt(T listener);
 }

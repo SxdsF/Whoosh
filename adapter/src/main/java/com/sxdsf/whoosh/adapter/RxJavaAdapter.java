@@ -1,8 +1,8 @@
 package com.sxdsf.whoosh.adapter;
 
-import com.sxdsf.whoosh.Listener;
 import com.sxdsf.whoosh.Adapter;
 import com.sxdsf.whoosh.Carrier;
+import com.sxdsf.whoosh.Listener;
 import com.sxdsf.whoosh.info.Message;
 
 import rx.Observable;
@@ -16,7 +16,7 @@ import rx.Subscription;
  * @date 2016/5/18-0:33
  * @desc 针对于RxJava的转换
  */
-public class RxJavaAdapter implements Adapter<Observable<Message>, Listener> {
+public class RxJavaAdapter implements Adapter<Listener, Observable<Message>> {
 
     @Override
     public Observable<Message> adapt(Listener publisher) {
