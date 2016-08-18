@@ -230,7 +230,7 @@ public class Listener extends Caster<Message> implements Carrier, ListenerShip, 
      * @param <T>
      * @return
      */
-    public <T> T adaptTo(@NonNull Adapter<T, Listener> adapter) {
+    public <T> T adaptTo(@NonNull Adapter<Listener, T> adapter) {
         return adapter.adapt(this);
     }
 
